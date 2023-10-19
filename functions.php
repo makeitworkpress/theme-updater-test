@@ -2,27 +2,50 @@
 /**
  * Set-up our autoloader from composer
  */
-spl_autoload_register( function($className) {
+spl_autoload_register( function($class_name) {
     
-    $calledClass    = str_replace( '\\', DIRECTORY_SEPARATOR, str_replace( '_', '-', strtolower($className) ) );
-    $parentDir      = get_template_directory() . DIRECTORY_SEPARATOR;
+    $called_class       = str_replace( '\\', '/', str_replace( '_', '-', $class_name ) );
+    $theme_dir          = get_template_directory() . '/';
     
     // Require main parent classes
-    $parentClass    = $parentDir . 'classes' . DIRECTORY_SEPARATOR . $calledClass . '.php';
+    $class_names        = explode('/', $called_class);
+    $final_class        = array_pop($class_names);
+    $class_rel_path     = $class_names ? implode('/', $class_names) . '/class-' . $final_class : 'class-' . $final_class;
+    $theme_class_file   = $theme_dir . 'classes/' . strtolower( $class_rel_path ) . '.php';
 
-    if( file_exists($parentClass) ) {
-        require_once( $parentClass );
+    if( file_exists( $theme_class_file ) ) {
+        require_once( $theme_class_file );
+        return;
+    } 
+
+    // Child themes with WordPress class naming
+    $child_class_file   = get_stylesheet_directory() . '/classes/' . strtolower($class_rel_path) . '.php';
+    
+    if( file_exists($child_class_file) ) {
+        require_once( $child_class_file );
         return;
     } 
     
+    // Child themes not using the WordPress class naming ( using a simple class- replace; namespaces in child themes should not have Class_ )
+    $child_class_file   = get_stylesheet_directory() . '/classes/' . strtolower( str_replace('class-', '', $class_rel_path) ) . '.php';
+    
+    if( file_exists($child_class_file) ) {
+        require_once( $child_class_file );
+        return;
+    }
+        
     // Require Vendor (composer) classes
-    $classNames     = explode(DIRECTORY_SEPARATOR, $calledClass);
-    array_splice($classNames, 2, 0, 'src');
+    if( ! isset($class_names[0]) || $class_names[0] !== 'MakeitWorkPress' || ! isset($class_names[1]) ) {
+        return;
+    }
 
-    $vendorClass    = $parentDir . 'vendor' . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $classNames) . '.php';
+    array_splice($class_names, 2, 0, 'src');
+    $class_names[0] = strtolower($class_names[0]);
+    $class_names[1] = strtolower($class_names[1]);
+    $vendor_class_file  = $theme_dir . 'vendor/' . implode('/', $class_names) . '/' . $final_class . '.php';
 
-    if( file_exists($vendorClass) ) {
-        require_once( $vendorClass );    
+    if( file_exists($vendor_class_file) ) {
+        require_once( $vendor_class_file );    
     }
    
 } );
