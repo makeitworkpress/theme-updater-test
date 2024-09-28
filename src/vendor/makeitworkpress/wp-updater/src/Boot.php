@@ -125,7 +125,7 @@ class Boot {
      */
     public function source_selection( $source, $remote_source = NULL, $upgrader = NULL, $hook_extra = NULL ) {
 
-        if( ! isset($source, $remote_source) ) {
+        if( ! isset($source, $remote_source) || ! isset($hook_extra['theme']) ) {
             return $source;
         }
 
